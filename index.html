@@ -15,13 +15,6 @@
     box-shadow: 0 1px 6px rgba(0,0,0,0.25);
     padding: 10px 12px;
   }
-  .title-panel {
-    position:absolute; top:12px; left:12px; z-index:1000;
-    max-width: 260px;
-  }
-  .title-panel h1 { font-size:15px; margin:0 0 2px; color:#1b263b; }
-  .title-panel p { font-size:11.5px; margin:0; color:#555; line-height:1.35; }
-
   .legend-panel {
     position:absolute; bottom:20px; left:12px; z-index:1000;
     font-size:12px; color:#1b263b;
@@ -49,6 +42,17 @@
     width: 280px;
     max-width: calc(100vw - 24px);
   }
+  .info-panel h1 {
+    font-size: 15px;
+    margin: 0 0 4px;
+    color: #1b263b;
+  }
+  .info-panel .info-intro {
+    font-size: 11.5px;
+    margin: 0;
+    color: #555;
+    line-height: 1.35;
+  }
   .info-panel .info-title {
     font-size: 14px;
     font-weight: 700;
@@ -61,12 +65,6 @@
     color: #333;
     margin: 0;
   }
-  .info-panel .info-placeholder {
-    font-size: 12.5px;
-    color: #888;
-    font-style: italic;
-    margin: 0;
-  }
 
   .leaflet-control-attribution { font-size: 10px; }
 </style>
@@ -75,15 +73,13 @@
 
 <div id="map"></div>
 
-<div class="panel title-panel">
-  <h1>Morocco River Basins</h1>
-  <p>Outlined shapes are sub-basins. Shaded areas are hydraulic regions &mdash; hover (or tap) a shaded area to see its name and description.</p>
-</div>
-
 <div class="panel legend-panel" id="legend"></div>
 
 <div class="panel info-panel" id="info-panel">
-  <p class="info-placeholder" id="info-placeholder">Hover or tap a shaded region to read about it.</p>
+  <div id="info-placeholder">
+    <h1>Morocco River Basins</h1>
+    <p class="info-intro">Outlined shapes are sub-basins. Shaded areas are hydraulic regions &mdash; hover (or tap) a shaded area to see its name and description.</p>
+  </div>
   <h2 class="info-title" id="info-title" style="display:none;"></h2>
   <p class="info-body" id="info-body" style="display:none;"></p>
 </div>
@@ -234,7 +230,7 @@
 
       buildLegend(regionNames);
 
-      map.fitBounds(basinLayerGroup.getBounds(), { padding: [10, 10] });
+      map.fitBounds(basinLayerGroup.getBounds(), { padding: [20, 20] });
     })
     .catch(function (err) {
       console.error(err);
