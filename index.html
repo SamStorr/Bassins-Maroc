@@ -44,18 +44,28 @@
     pointer-events: none;
   }
 
-  .region-tooltip {
-    font-size: 12.5px;
-    line-height: 1.42;
-    padding: 8px 11px;
-    max-width: 260px;
-    white-space: normal;
+  .info-panel {
+    position:absolute; top:12px; right:12px; z-index:1000;
+    width: 280px;
+    max-width: calc(100vw - 24px);
   }
-  .region-tooltip-title {
-    display: block;
-    font-size: 13.5px;
+  .info-panel .info-title {
+    font-size: 14px;
     font-weight: 700;
-    margin-bottom: 4px;
+    color: #1b263b;
+    margin: 0 0 6px;
+  }
+  .info-panel .info-body {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #333;
+    margin: 0;
+  }
+  .info-panel .info-placeholder {
+    font-size: 12.5px;
+    color: #888;
+    font-style: italic;
+    margin: 0;
   }
 
   .leaflet-control-attribution { font-size: 10px; }
@@ -71,6 +81,12 @@
 </div>
 
 <div class="panel legend-panel" id="legend"></div>
+
+<div class="panel info-panel" id="info-panel">
+  <p class="info-placeholder" id="info-placeholder">Hover or tap a shaded region to read about it.</p>
+  <h2 class="info-title" id="info-title" style="display:none;"></h2>
+  <p class="info-body" id="info-body" style="display:none;"></p>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
@@ -116,10 +132,25 @@
   var regionLayers = [];
 
   function resetRegions() {
-    regionLayers.forEach(function (l) {
-      l.setStyle(l._defaultStyle);
-      l.closeTooltip();
-    });
+    regionLayers.forEach(function (l) { l.setStyle(l._defaultStyle); });
+    updateInfoPanel(null);
+  }
+
+  function updateInfoPanel(name) {
+    var placeholder = document.getElementById("info-placeholder");
+    var title = document.getElementById("info-title");
+    var body = document.getElementById("info-body");
+    if (name) {
+      title.textContent = name;
+      body.textContent = REGION_DESCRIPTIONS[name] || "";
+      title.style.display = "block";
+      body.style.display = "block";
+      placeholder.style.display = "none";
+    } else {
+      title.style.display = "none";
+      body.style.display = "none";
+      placeholder.style.display = "block";
+    }
   }
 
   function wireRegionLayer(layer, name, color) {
@@ -128,17 +159,13 @@
     layer._defaultStyle = def;
     layer.setStyle(def);
 
-    var description = REGION_DESCRIPTIONS[name] || "";
-    var content = '<span class="region-tooltip-title">' + name + '</span>' + description;
-    layer.bindTooltip(content, { sticky: false, direction: "center", className: "region-tooltip" });
-
-    layer.on("mouseover", function () { layer.setStyle(hov); layer.openTooltip(); });
-    layer.on("mouseout",  function () { layer.setStyle(def); layer.closeTooltip(); });
+    layer.on("mouseover", function () { layer.setStyle(hov); updateInfoPanel(name); });
+    layer.on("mouseout",  function () { layer.setStyle(def); updateInfoPanel(null); });
     layer.on("click", function (e) {
       L.DomEvent.stopPropagation(e);
       resetRegions();
       layer.setStyle(hov);
-      layer.openTooltip();
+      updateInfoPanel(name);
     });
     regionLayers.push(layer);
   }
