@@ -95,7 +95,7 @@
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
 
-  var basinLayerGroup = L.layerGroup().addTo(map);
+  var basinLayerGroup = L.featureGroup().addTo(map);
   var labelLayerGroup = L.layerGroup().addTo(map);
   var regionLayerGroup = L.layerGroup().addTo(map);
   var regionLayers = [];
@@ -189,8 +189,7 @@
 
       buildLegend(regionNames);
 
-      var bounds = L.geoJSON(data).getBounds();
-      map.fitBounds(bounds, { padding: [10, 10] });
+      map.fitBounds(basinLayerGroup.getBounds(), { padding: [20, 20] });
     })
     .catch(function (err) {
       console.error(err);
