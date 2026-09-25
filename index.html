@@ -190,7 +190,7 @@
       buildLegend(regionNames);
 
       var bounds = L.geoJSON(data).getBounds();
-      map.fitBounds(bounds, { padding: [20, 20] });
+      map.fitBounds(bounds, { padding: [10, 10] });
     })
     .catch(function (err) {
       console.error(err);
