@@ -45,9 +45,17 @@
   }
 
   .region-tooltip {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 4px 9px;
+    font-size: 12.5px;
+    line-height: 1.42;
+    padding: 8px 11px;
+    max-width: 260px;
+    white-space: normal;
+  }
+  .region-tooltip-title {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
   }
 
   .leaflet-control-attribution { font-size: 10px; }
@@ -59,7 +67,7 @@
 
 <div class="panel title-panel">
   <h1>Morocco River Basins</h1>
-  <p>Outlined shapes are sub-basins. Shaded areas are hydraulic regions &mdash; hover (or tap) a shaded area to see its name.</p>
+  <p>Outlined shapes are sub-basins. Shaded areas are hydraulic regions &mdash; hover (or tap) a shaded area to see its name and description.</p>
 </div>
 
 <div class="panel legend-panel" id="legend"></div>
@@ -77,6 +85,13 @@
     "Atlantic Central Basins": "#b5651d",
     "Atlantic South Basins":   "#6a4c93",
     "Mediterranean Basin":     "#1b998b"
+  };
+
+  var REGION_DESCRIPTIONS = {
+    "Atlantic North Basins": "The Sebou Basin is Morocco's most water rich, supporting intensive irrigated agriculture in the Gharb Plain, industry and water supply to the cities of Fez and Meknès. As with the Loukkos basin, these demands are putting stress on water availability and quality, alongside growing flood risk in the Gharb plains. The Moulaya basin in the Northeast is affected by drought.",
+    "Atlantic Central Basins": "The Bouregreg basin supplies the capital Rabat-Salé, and the Chaouia agricultural plain. Morocco's longest river, the Oum Er-Rbia, is a major source of irrigation water and hydroelectric generation. Both basins are experiencing declining water flows and increasing demand. The Tensift basin supplying Marrakech is one of the most stressed in Morocco.",
+    "Atlantic South Basins": "Intensive irrigated agriculture supplying water-intensive crops to European markets has heavily depleted groundwater in the Souss-Massa basin. The Drâa-Tafilalet basin, covering much of the pre-Saharan zone, is extremely arid and the most climate-exposed in the country: traditional khettara systems transporting groundwater to fields and oases are failing.",
+    "Mediterranean Basin": "The northern Mediterranean coast is exposed to intense flash floods in the Rif Mountains. Meanwhile, coastal communities have limited water storage capacity."
   };
 
   var BASIN_STYLE = { color: "#1b263b", weight: 1.2, fill: false, opacity: 0.85 };
@@ -112,7 +127,10 @@
     var hov = regionHoverStyle(color);
     layer._defaultStyle = def;
     layer.setStyle(def);
-    layer.bindTooltip(name, { sticky: true, direction: "top", className: "region-tooltip" });
+
+    var description = REGION_DESCRIPTIONS[name] || "";
+    var content = '<span class="region-tooltip-title">' + name + '</span>' + description;
+    layer.bindTooltip(content, { sticky: false, direction: "center", className: "region-tooltip" });
 
     layer.on("mouseover", function () { layer.setStyle(hov); layer.openTooltip(); });
     layer.on("mouseout",  function () { layer.setStyle(def); layer.closeTooltip(); });
@@ -120,7 +138,7 @@
       L.DomEvent.stopPropagation(e);
       resetRegions();
       layer.setStyle(hov);
-      layer.openTooltip(e.latlng);
+      layer.openTooltip();
     });
     regionLayers.push(layer);
   }
@@ -189,7 +207,7 @@
 
       buildLegend(regionNames);
 
-      map.fitBounds(basinLayerGroup.getBounds(), { padding: [10, 10] });
+      map.fitBounds(basinLayerGroup.getBounds(), { padding: [20, 20] });
     })
     .catch(function (err) {
       console.error(err);
