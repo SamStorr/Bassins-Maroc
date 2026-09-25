@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morocco River Basins Map</title>
+
+  <!-- Leaflet CSS -->
+  <link 
+    rel="stylesheet" 
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="" 
+  />
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* Style for non-interactive sub-basin text labels superimposed on map */
+    .static-basin-label {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a3858;
+      text-shadow: 
+        1px 1px 2px #ffffff,
+       -1px -1px 2px #ffffff,
+        1px -1px 2px #ffffff,
+       -1px  1px 2px #ffffff; /* White text halo for readability */
+      pointer-events: none;    /* Ensures mouse events pass through to interactive layer */
+    }
+
+    /* Style for interactive region tooltip */
+    .region-tooltip {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #003459;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script 
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+  </script>
+
+  <!-- Turf.js for spatial operations -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+  <script>
+    // 1. Initialize map centered over Morocco
+    const map = L.map('map').setView([31.7917, -7.0926], 6);
+
+    // 2. Base tile layer (OpenStreetMap)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Styling configurations
+    function regionDefaultStyle() {
+      return {
+        fillColor: '#2b5c8f',
+        weight: 2,
+        opacity: 0.9,
+        color: '#003459',
+        fillOpacity: 0.4
+      };
+    }
+
+    function regionHighlightStyle() {
+      return {
+        fillColor: '#00a8e8',
+        weight: 3,
+        color: '#001d3d',
+        fillOpacity: 0.75
+      };
+    }
+
+    // 3. Fetch GeoJSON Data
+    fetch('./bassins.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        return response.json();
+      })
+      .then(data => {
+
+        // --- LAYER A: NON-INTERACTIVE SUB-BASIN BOUNDARIES & LABELS ---
+        L.geoJSON(data, {
+          style: {
+            fill: false,
+            weight: 0.8,
+            color: '#7f9cb8',
+            dashArray: '3, 3',
+            interactive: false
+          },
+          onEachFeature: function (feature, layer) {
+            const props = feature.properties || {};
+            const subBasinName = props.NomSousBas || props.nomsousbas || props.NOMSOUSBAS || '';
+
+            if (subBasinName) {
+              // Superimpose permanent label on map
+              layer.bindTooltip(subBasinName, {
+                permanent: true,
+                direction: 'center',
+                className: 'static-basin-label',
+                interactive: false
+              });
+            }
+          },
+          interactive: false
+        }).addTo(map);
+
+
+        // --- LAYER B: GROUPED REGION SHAPES (INTERACTIVE) ---
+        // Group individual features by REGION attribute using Turf.js
+        const regionGroups = {};
+
+        data.features.forEach(feature => {
+          const props = feature.properties || {};
+          const regionName = props.REGION || props.region || props.Region || 'Unknown Region';
+
+          if (!regionGroups[regionName]) {
+            regionGroups[regionName] = [];
+          }
+          regionGroups[regionName].push(feature);
+        });
+
+        // Dissolve shapes within each group to form single region polygons
+        const mergedRegionFeatures = [];
+
+        Object.keys(regionGroups).forEach(regionName => {
+          const features = regionGroups[regionName];
+          let combinedPoly = features[0];
+
+          for (let i = 1; i < features.length; i++) {
+            try {
+              combinedPoly = turf.union(combinedPoly, features[i]);
+            } catch (err) {
+              console.warn(`Union warning for region ${regionName}:`, err);
+            }
+          }
+
+          if (combinedPoly) {
+            combinedPoly.properties = { REGION: regionName };
+            mergedRegionFeatures.push(combinedPoly);
+          }
+        });
+
+        const regionGeoJSON = {
+          type: "FeatureCollection",
+          features: mergedRegionFeatures
+        };
+
+        // Render interactive layer
+        const interactiveRegionLayer = L.geoJSON(regionGeoJSON, {
+          style: regionDefaultStyle,
+          onEachFeature: function (feature, layer) {
+            const regionName = feature.properties.REGION;
+
+            // Interactive Tooltip showing Region Name
+            layer.bindTooltip(`<strong>Region:</strong> ${regionName}`, {
+              sticky: true,
+              className: 'region-tooltip'
+            });
+
+            // Hover Effects
+            layer.on({
+              mouseover: function (e) {
+                e.target.setStyle(regionHighlightStyle());
+              },
+              mouseout: function (e) {
+                interactiveRegionLayer.resetStyle(e.target);
+              }
+            });
+          }
+        }).addTo(map);
+
+        // Zoom map to fit region bounds
+        map.fitBounds(interactiveRegionLayer.getBounds());
+
+      })
+      .catch(error => {
+        console.error('Error loading Moroccan river basin layer:', error);
+      });
+  </script>
+</body>
+</html>
