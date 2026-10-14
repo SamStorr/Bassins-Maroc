@@ -1,0 +1,54 @@
+{
+  "basins": [
+    {
+      "code": 10,
+      "name": "Sakia El Hamra-Oued Eddahab",
+      "description": "The Saharian basins are hyper-arid and rely mainly on groundwater and seawater desalination."
+    },
+    {
+      "code": 6,
+      "name": "Drâa-Oued Noun",
+      "description": "Covers much of the pre-Saharan zone. Characterised by extreme aridity, oasis systems dependent on ephemeral flows and fossil groundwater, and among the highest climate exposure in the country. Traditional khettara systems are disappearing as water tables fall."
+    },
+    {
+      "code": 8,
+      "name": "Sous-Massa",
+      "description": "Intensive irrigated agriculture — particularly citrus, tomatoes, and early vegetables for European export markets , has drawn down the Souss aquifer at rates that have triggered saltwater intrusion along the coast. Overexploitation of groundwater resources threatens the sustainability of agricultural development in morocco."
+    },
+    {
+      "code": 7,
+      "name": "Tensift",
+      "description": "The Tensift basin, centred on Marrakech, is one of the most water-stressed in Morocco: groundwater tables in the Haouz plain are falling at alarming rates, irrigated agriculture (notably citrus and market gardening for export) is competing directly with urban water supply, and the tourism sector adds significant seasonal demand pressure."
+    },
+    {
+      "code": 5,
+      "name": "Oum Er Rbia",
+      "description": "The Oum Er-Rbia, Morocco's longest river, is a major source of irrigation water for the Tadla and Doukkala plains and hydroelectric generation. Along with Bouregreg-Chaouia basin, it is experiencing declining flows and increasing inter-sectoral competition for water."
+    },
+    {
+      "code": 4,
+      "name": "Bouregreg et Chaouia",
+      "description": "The Bouregreg basin supplies the capital Rabat-Salé and supports the Chaouia agricultural plain. Along with Oum Er-Rbia, it is experiencing declining flows and increasing inter-sectoral competition for water."
+    },
+    {
+      "code": 1,
+      "name": "Loukkos",
+      "description": "The Loukkos basin in the extreme northwest supports the Larache agricultural zone. The northern Mediterranean coast, while benefiting from higher rainfall than the southern zones, is exposed to intense flash flood events in the Rif Mountains, a geologically fragile zone prone to landslides, and faces acute water supply challenges for coastal towns due to limited storage capacity."
+    },
+    {
+      "code": 2,
+      "name": "Moulouya",
+      "description": "The Moulouya basin in the northeast, stretching from the High Atlas to the Mediterranean, is increasingly affected by drought and reduced reservoir inflows."
+    },
+    {
+      "code": 9,
+      "name": "Guir-Ziz-Rheris",
+      "description": "ALong with the Drâa-Oued Noun"
+    },
+    {
+      "code": 3,
+      "name": "Sebou",
+      "description": "The Sebou Basin is Morocco's most water rich, supporting intensive irrigated agriculture in the Gharb Plain, industry and water supply to the cities of Fez and Meknès. These demands are putting stress on water availability and quality, alongside growing flood risk in the Gharb plain"
+    }
+  ]
+}

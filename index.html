@@ -6,82 +6,43 @@
 <title>Morocco River Basins</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
+  /* Panel text styling — change these values to restyle the info panel. */
+  :root {
+    --panel-title-color: #1b263b;
+    --panel-title-size:  1.1em;
+    --panel-text-color:  #555555;
+    --panel-text-size:   0.9em;
+  }
   html, body { height:100%; margin:0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
   #map { position:absolute; top:0; bottom:0; left:0; right:0; }
-
-  .panel {
-    background: rgba(255,255,255,0.94);
-    border-radius: 6px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.25);
-    padding: 10px 12px;
-  }
-  .legend-panel {
-    position:absolute; bottom:20px; left:12px; z-index:1000;
-    font-size:12px; color:#1b263b;
-  }
-  .legend-panel .legend-title { font-weight:600; margin-bottom:6px; font-size:11.5px; color:#333; }
-  .legend-row { display:flex; align-items:center; gap:7px; margin:3px 0; }
-  .legend-swatch { width:14px; height:14px; flex:0 0 auto; border-radius:2px; border:1.5px solid rgba(0,0,0,0.35); }
-  .legend-line { width:16px; height:0; border-top:1.5px solid #1b263b; flex:0 0 auto; }
-
-  .basin-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: #1b263b;
-    white-space: nowrap;
-    text-shadow:
-      -1px -1px 0 #fff, 1px -1px 0 #fff,
-      -1px  1px 0 #fff, 1px  1px 0 #fff,
-      0 0 3px #fff;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .info-panel {
-    position:absolute; top:12px; right:12px; z-index:1000;
-    width: 280px;
-    max-width: calc(100vw - 24px);
-  }
-  .info-panel h1 {
-    font-size: 15px;
-    margin: 0 0 4px;
-    color: #1b263b;
-  }
-  .info-panel .info-intro {
-    font-size: 11.5px;
-    margin: 0;
-    color: #555;
-    line-height: 1.35;
-  }
-  .info-panel .info-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1b263b;
-    margin: 0 0 6px;
-  }
-  .info-panel .info-body {
-    font-size: 12.5px;
-    line-height: 1.45;
-    color: #333;
-    margin: 0;
-  }
-
-  .leaflet-control-attribution { font-size: 10px; }
+  .panel { background: rgba(255,255,255,0.94); border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,0.25); padding: 10px 12px; }
+  .info-panel { position:absolute; top:12px; right:12px; z-index:1000; width:280px; max-width:calc(100vw - 24px); max-height:calc(100vh - 24px); overflow-y:auto; box-sizing:border-box; }
+  .info-panel h1 { font-size: var(--panel-title-size); margin: 0 0 4px; color: var(--panel-title-color); }
+  .info-panel .info-intro { display:block; font-size: var(--panel-text-size); color: var(--panel-text-color); line-height:1.35; }
+  .info-panel .info-intro p { margin: 0 0 8px; }
+  .info-panel .info-intro p:last-child { margin-bottom: 0; }
+  .info-panel .info-title { font-size: var(--panel-title-size); font-weight:700; color: var(--panel-title-color); margin: 0 0 5px; }
+  .info-panel .info-desc { font-size: var(--panel-text-size); line-height:1.4; color: var(--panel-text-color); margin: 0; }
+  .basin-label { font-size:11px; font-weight:500; color:#1b263b; white-space:nowrap;
+    text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 3px #fff;
+    transform: translate(-50%, -50%); pointer-events:none; }
+  .leaflet-control-attribution { font-size:10px; }
 </style>
 </head>
 <body>
-
 <div id="map"></div>
-
-<div class="panel legend-panel" id="legend"></div>
 
 <div class="panel info-panel" id="info-panel">
   <div id="info-placeholder">
     <h1>Morocco River Basins</h1>
-    <p class="info-intro">Outlined shapes are river basins. Shaded areas represent different regions &mdash; hover (or tap) the shapes to learn about the challenges in each region.</p>
+    <span class="info-intro">
+      <p>Hover (or tap) a shaded basin to see its name and description.</p>
+    </span>
   </div>
-  <h2 class="info-title" id="info-title" style="display:none;"></h2>
-  <p class="info-body" id="info-body" style="display:none;"></p>
+  <div id="info-content" style="display:none;">
+    <h2 class="info-title" id="info-title"></h2>
+    <p class="info-desc" id="info-desc"></p>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -90,33 +51,16 @@
 (function () {
   "use strict";
 
-  var DATA_URL = "bassins.json";
+  var SHAPES_URL = "basins_morocco.json";   // polygons (GeoJSON)
+  var INFO_URL   = "basin-data.json";       // name + description per basin, joined on "code"
 
-  var REGION_COLORS = {
-    "Atlantic North Basins":   "#2a6f97",
-    "Atlantic Central Basins": "#b5651d",
-    "Atlantic South Basins":   "#6a4c93",
-    "Mediterranean Basin":     "#1b998b"
-  };
+  var COLORS = ["#2a6f97", "#1b998b", "#b5651d", "#6a4c93", "#c1121f",
+                "#588157", "#e08e0b", "#d6336c", "#4361ee", "#7f7f3a"];
 
-  var REGION_DESCRIPTIONS = {
-    "Atlantic North Basins": "The Sebou Basin is Morocco's most water rich, supporting intensive irrigated agriculture in the Gharb Plain, industry and water supply to the cities of Fez and Meknès. As with the Loukkos basin, these demands are putting stress on water availability and quality, alongside growing flood risk in the Gharb plains. The Moulaya basin in the Northeast is affected by drought.",
-    "Atlantic Central Basins": "The Bouregreg basin supplies the capital Rabat-Salé, and the Chaouia agricultural plain. Morocco's longest river, the Oum Er-Rbia, is a major source of irrigation water and hydroelectric generation. Both basins are experiencing declining water flows and increasing demand. The Tensift basin supplying Marrakech is one of the most stressed in Morocco.",
-    "Atlantic South Basins": "Intensive irrigated agriculture supplying water-intensive crops to European markets has heavily depleted groundwater in the Souss-Massa basin. The Drâa-Tafilalet basin, covering much of the pre-Saharan zone, is extremely arid and the most climate-exposed in the country: traditional khettara systems transporting groundwater to fields and oases are failing.",
-    "Mediterranean Basin": "The northern Mediterranean coast is exposed to intense flash floods in the Rif Mountains. Meanwhile, coastal communities have limited water storage capacity."
-  };
+  function defaultStyle(c) { return { color:c, weight:2, fillColor:c, fillOpacity:0.35, opacity:0.9 }; }
+  function hoverStyle(c)   { return { color:c, weight:3, fillColor:c, fillOpacity:0.6,  opacity:1 }; }
 
-  var BASIN_STYLE = { color: "#1b263b", weight: 1.2, fill: false, opacity: 0.85 };
-
-  function regionDefaultStyle(color) {
-    return { color: color, weight: 2, fillColor: color, fillOpacity: 0.45, opacity: 0.9 };
-  }
-  function regionHoverStyle(color) {
-    return { color: color, weight: 3, fillColor: color, fillOpacity: 0.7, opacity: 1 };
-  }
-
-  var map = L.map("map", { zoomControl: true }).setView([31.5, -6.5], 6);
-
+  var map = L.map("map", { zoomControl: true }).setView([31.8, -7.1], 6);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -124,119 +68,67 @@
 
   var basinLayerGroup = L.featureGroup().addTo(map);
   var labelLayerGroup = L.layerGroup().addTo(map);
-  var regionLayerGroup = L.layerGroup().addTo(map);
-  var regionLayers = [];
+  var basinLayers = [];
 
-  function resetRegions() {
-    regionLayers.forEach(function (l) { l.setStyle(l._defaultStyle); });
-    updateInfoPanel(null);
-  }
-
-  function updateInfoPanel(name) {
-    var placeholder = document.getElementById("info-placeholder");
-    var title = document.getElementById("info-title");
-    var body = document.getElementById("info-body");
+  function updateInfoPanel(name, desc) {
+    var ph = document.getElementById("info-placeholder");
+    var ct = document.getElementById("info-content");
     if (name) {
-      title.textContent = name;
-      body.textContent = REGION_DESCRIPTIONS[name] || "";
-      title.style.display = "block";
-      body.style.display = "block";
-      placeholder.style.display = "none";
+      document.getElementById("info-title").textContent = name;
+      document.getElementById("info-desc").textContent = desc || "";
+      ct.style.display = "block"; ph.style.display = "none";
     } else {
-      title.style.display = "none";
-      body.style.display = "none";
-      placeholder.style.display = "block";
+      ct.style.display = "none"; ph.style.display = "block";
     }
   }
-
-  function wireRegionLayer(layer, name, color) {
-    var def = regionDefaultStyle(color);
-    var hov = regionHoverStyle(color);
-    layer._defaultStyle = def;
-    layer.setStyle(def);
-
-    layer.on("mouseover", function () { layer.setStyle(hov); updateInfoPanel(name); });
+  function resetBasins() {
+    basinLayers.forEach(function (l) { l.setStyle(l._defaultStyle); });
+    updateInfoPanel(null);
+  }
+  function wire(layer, name, desc, color) {
+    var def = defaultStyle(color), hov = hoverStyle(color);
+    layer._defaultStyle = def; layer.setStyle(def);
+    layer.on("mouseover", function () { layer.setStyle(hov); updateInfoPanel(name, desc); });
     layer.on("mouseout",  function () { layer.setStyle(def); updateInfoPanel(null); });
     layer.on("click", function (e) {
       L.DomEvent.stopPropagation(e);
-      resetRegions();
-      layer.setStyle(hov);
-      updateInfoPanel(name);
+      resetBasins(); layer.setStyle(hov); updateInfoPanel(name, desc);
     });
-    regionLayers.push(layer);
+    basinLayers.push(layer);
   }
+  map.on("click", resetBasins);
 
-  map.on("click", resetRegions);
-
-  function buildLegend(regionNames) {
-    var el = document.getElementById("legend");
-    var html = '<div class="legend-title">Legend</div>';
-    html += '<div class="legend-row"><span class="legend-line"></span><span>Sub-basin outline</span></div>';
-    regionNames.forEach(function (name) {
-      var color = REGION_COLORS[name] || "#888";
-      html += '<div class="legend-row"><span class="legend-swatch" style="background:' + color +
-              ';border-color:' + color + '"></span><span>' + name + '</span></div>';
-    });
-    el.innerHTML = html;
-  }
-
-  fetch(DATA_URL)
-    .then(function (r) {
-      if (!r.ok) throw new Error("Could not load " + DATA_URL + " (HTTP " + r.status + ")");
+  function fetchJSON(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("Could not load " + url + " (HTTP " + r.status + ")");
       return r.json();
-    })
-    .then(function (data) {
-      var features = data.features;
+    });
+  }
 
-      // --- Basin outlines + name labels ---
-      features.forEach(function (f) {
-        L.geoJSON(f, { style: BASIN_STYLE }).addTo(basinLayerGroup);
+  Promise.all([fetchJSON(SHAPES_URL), fetchJSON(INFO_URL)])
+    .then(function (res) {
+      var shapes = res[0], infoByCode = {};
+      res[1].basins.forEach(function (b) { infoByCode[b.code] = b; });
 
-        var name = f.properties.NomSousBas;
-        if (name) {
-          var pt = turf.pointOnFeature(f);
-          var lng = pt.geometry.coordinates[0], lat = pt.geometry.coordinates[1];
-          var icon = L.divIcon({ className: "basin-label", html: name, iconSize: [0, 0] });
-          L.marker([lat, lng], { icon: icon, interactive: false }).addTo(labelLayerGroup);
-        }
+      shapes.features.forEach(function (f, i) {
+        var code = f.properties.code, color = COLORS[i % COLORS.length];
+        var info = infoByCode[code] || {};
+        var name = info.name || f.properties.name, desc = info.description || "";
+        var layer = L.geoJSON(f);
+        layer.eachLayer(function (l) { wire(l, name, desc, color); });
+        layer.addTo(basinLayerGroup);
+
+        // Label at a point guaranteed to lie inside the basin
+        var pt = turf.pointOnFeature(f).geometry.coordinates;
+        var icon = L.divIcon({ className: "basin-label", html: name, iconSize: [0, 0] });
+        L.marker([pt[1], pt[0]], { icon: icon, interactive: false }).addTo(labelLayerGroup);
       });
-
-      // --- Region groups (dissolve basins sharing REGION) ---
-      var byRegion = {};
-      features.forEach(function (f) {
-        var region = f.properties.REGION;
-        if (!region) return;
-        (byRegion[region] = byRegion[region] || []).push(f);
-      });
-
-      var regionNames = Object.keys(byRegion);
-      regionNames.forEach(function (name) {
-        var feats = byRegion[name];
-        var merged;
-        try {
-          merged = feats.length === 1
-            ? feats[0]
-            : turf.union(turf.featureCollection(feats), { properties: { REGION: name } });
-        } catch (err) {
-          console.error("Union failed for region", name, err);
-          merged = feats[0];
-        }
-        if (!merged) return;
-        var color = REGION_COLORS[name] || "#888888";
-        var layer = L.geoJSON(merged);
-        layer.eachLayer(function (l) { wireRegionLayer(l, name, color); });
-        layer.addTo(regionLayerGroup);
-      });
-
-      buildLegend(regionNames);
-
-      map.fitBounds(basinLayerGroup.getBounds(), { padding: [10, 10] });
+      map.fitBounds(basinLayerGroup.getBounds(), { padding: [20, 20] });
     })
     .catch(function (err) {
       console.error(err);
-      document.getElementById("legend").innerHTML =
-        '<div style="color:#a00;max-width:220px;">Failed to load ' + DATA_URL +
-        '. Make sure it sits in the same folder as this HTML file.</div>';
+      document.getElementById("info-placeholder").innerHTML =
+        '<p style="color:#a00;">Failed to load map data. Serve this folder over http (e.g. run "python -m http.server") and make sure basins_morocco.json and basin-data.json sit next to this file.</p>';
     });
 })();
 </script>
